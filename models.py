@@ -1,18 +1,22 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 
-# Modelo para la tabla `top_products_df`
-class TopProduct(BaseModel): #FALTA MODIFICAR CON RESULTADO DAG
-    product_id: int
-    product_name: str
-    advertiser: str
-    score: float
-    model: str  
-
-# Modelo para la tabla `top_ctr_df`
+# Modelo para top_product_df
+class TopProduct(BaseModel):
+    advertiser_id: str  
+    product_id: str    
+    views: int         
+    
+# Modelo para top_ctr_df
 class TopCTR(BaseModel):
+    advertiser_id: str 
+    product_id: str   
+    clicks: float       
+    impressions: float 
+    ctr: float          
+
+# Modelo genérico para devolver recomendaciones
+class RecommendationResponse(BaseModel):
     advertiser: str
-    product_id: int
-    clicks: int
-    impressions: int
-    ctr: float  # Click-through rate calculado
+    model: str
+    recommendations: List[TopProduct] | List[TopCTR] 
