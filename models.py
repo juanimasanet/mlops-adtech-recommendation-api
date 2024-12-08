@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Union
 
 # Modelo para top_product_df
 class TopProduct(BaseModel):
@@ -17,6 +17,6 @@ class TopCTR(BaseModel):
 
 # Modelo genérico para devolver recomendaciones
 class RecommendationResponse(BaseModel):
-    advertiser: str
+    advertiser_id: str
     model: str
-    recommendations: List[TopProduct] | List[TopCTR] 
+    recommendations: Union[List[TopProduct], List[TopCTR]]
