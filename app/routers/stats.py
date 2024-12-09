@@ -12,10 +12,10 @@ def get_stats():
     - Advertisers que más varían sus recomendaciones por día
     - Estadísticas de coincidencia entre ambos modelos
     """
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)  # Usar DictCursor para obtener resultados como diccionarios
-
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)  # DictCursor para resultados como diccionarios
+
         # Cantidad de advertisers
         cursor.execute("SELECT COUNT(DISTINCT advertiser_id) AS total_advertisers FROM top_products_df")
         advertiser_result = cursor.fetchone()
@@ -28,8 +28,6 @@ def get_stats():
             SELECT advertiser_id, COUNT(DISTINCT date) AS variation_count
             FROM top_products_df
             GROUP BY advertiser_id
-            ORDER BY variation_count DESC
-            LIMIT 1
         """)
         top_advertiser_result = cursor.fetchone()
         if top_advertiser_result is None:
@@ -41,20 +39,33 @@ def get_stats():
 
         # Estadísticas de coincidencia entre ambos modelos
         cursor.execute("""
-            SELECT COUNT(*) AS common_recommendations
+            SELECT tp.date, tp.advertiser_id, tc.product_id
             FROM top_products_df tp
             JOIN top_ctr_df tc
             ON tp.advertiser_id = tc.advertiser_id 
                AND tp.product_id = tc.product_id
                AND tp.date = tc.date
+            GROUP BY tp.date, tp.advertiser_id, tc.product_id
+            ORDER BY tp.date ASC
         """)
-        model_agreement_result = cursor.fetchone()
-        if model_agreement_result is None:
+        model_agreement_results = cursor.fetchall()
+        if not model_agreement_results:
             raise HTTPException(status_code=404, detail="No data found for model agreement")
-        model_agreement = model_agreement_result["common_recommendations"]
+        
+        # Formatear los resultados de la consulta
+        model_agreement = []
+        for row in model_agreement_results:
+            if row["date"] is None:
+                continue  # Ignorar filas con fechas nulas
+            model_agreement.append({
+                "date": row["date"].strftime("%Y-%m-%d"),
+                "advertiser_id": row["advertiser_id"],
+                "product_id": row["product_id"]
+            })
 
     finally:
-        conn.close()
+        if 'conn' in locals():
+            conn.close()
 
     # Formatear resultados en una estructura JSON
     return {
