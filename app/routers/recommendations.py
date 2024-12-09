@@ -17,7 +17,7 @@ def get_recommendations(adv: str, model: str):
         query = """
             SELECT advertiser_id, product_id, views
             FROM top_products_df
-            WHERE advertiser_id = %s
+            WHERE advertiser_id = %s AND date = CURRENT_DATE
         """
         cursor.execute(query, (adv,))
         results = cursor.fetchall()
@@ -37,7 +37,7 @@ def get_recommendations(adv: str, model: str):
         query = """
             SELECT advertiser_id, product_id, clicks, impressions, ctr
             FROM top_ctr_df
-            WHERE advertiser_id = %s
+            WHERE advertiser_id = %s AND date = CURRENT_DATE
         """
         cursor.execute(query, (adv,))
         results = cursor.fetchall()
