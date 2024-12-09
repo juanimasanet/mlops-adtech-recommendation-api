@@ -122,8 +122,8 @@ def escribir_en_bd(**kwargs):
         create_table_queries = {
             "top_ctr_df": """
                 CREATE TABLE IF NOT EXISTS top_ctr_df (
-                    product_id VARCHAR(50),
                     advertiser_id VARCHAR(50),
+                    product_id VARCHAR(50),
                     impressions INT,
                     clicks INT,
                     ctr FLOAT
@@ -156,9 +156,9 @@ def escribir_en_bd(**kwargs):
         # Insertar datos en las tablas
         for _, row in top_ctr_df.iterrows():
             cur.execute(
-                "INSERT INTO top_ctr_df (product_id, advertiser_id, impressions, clicks, ctr) VALUES (%s, %s, %s, %s, %s)",
-                tuple(row)
-            )
+            "INSERT INTO top_ctr_df (advertiser_id, product_id, impressions, clicks, ctr) VALUES (%s, %s, %s, %s, %s)",
+            (row['advertiser_id'], row['product_id'], row['impressions'], row['clicks'], row['ctr'])
+         )
 
         conn.commit()
         cur.close()
