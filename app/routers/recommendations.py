@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.database import get_db_connection
 from app.models import TopProduct, TopCTR, RecommendationResponse
+import psycopg2.extras  
 
 router = APIRouter()
 
@@ -10,7 +11,7 @@ def get_recommendations(adv: str, model: str):
     Devuelve las recomendaciones para un advertiser y un modelo específico.
     """
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)  
 
     if model == "top_product":
         # Query para top_product_df
@@ -64,8 +65,9 @@ def get_recommendations(adv: str, model: str):
     if not recommendations:
         raise HTTPException(status_code=404, detail="No se encontraron recomendaciones para este advertiser.")
 
+    # Retornar el modelo con los datos correctos
     return RecommendationResponse(
-        advertiser=adv,
+        advertiser_id=adv,  
         model=model,
         recommendations=recommendations
     )
