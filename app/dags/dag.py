@@ -63,12 +63,12 @@ def calcular_top_ctr(ti, **kwargs):
         clicks_df = filtered_ads_views[filtered_ads_views['type'] == 'click']
         impressions_df = filtered_ads_views[filtered_ads_views['type'] == 'impression']
 
-        # Agrupar por advertiser_id y product_id
-        clicks_count = clicks_df.groupby(['advertiser_id', 'product_id']).size().reset_index(name='clicks')
-        impressions_count = impressions_df.groupby(['advertiser_id', 'product_id']).size().reset_index(name='impressions')
+        # Agrupar por advertiser_id, product_id y date
+        clicks_count = clicks_df.groupby(['advertiser_id', 'product_id', 'date']).size().reset_index(name='clicks')
+        impressions_count = impressions_df.groupby(['advertiser_id', 'product_id', 'date']).size().reset_index(name='impressions')
 
         # Combinar clicks e impresiones
-        ctr_df = pd.merge(clicks_count, impressions_count, on=['advertiser_id', 'product_id'], how='outer').fillna(0)
+        ctr_df = pd.merge(clicks_count, impressions_count, on=['advertiser_id', 'product_id', 'date'], how='outer').fillna(0)
 
         # Calcular CTR evitando división por cero
         ctr_df['ctr'] = np.where(
@@ -77,9 +77,9 @@ def calcular_top_ctr(ti, **kwargs):
             0
         )
 
-        # Ordenar por CTR dentro de cada advertiser_id y tomar los top 20
-        top_ctr_df = ctr_df.sort_values(['advertiser_id', 'ctr'], ascending=[True, False])
-        top_ctr_df = top_ctr_df.groupby('advertiser_id').head(20).reset_index(drop=True)
+        # Ordenar por CTR dentro de cada advertiser_id y date, y tomar los top 20
+        top_ctr_df = ctr_df.sort_values(['advertiser_id', 'date', 'ctr'], ascending=[True, True, False])
+        top_ctr_df = top_ctr_df.groupby(['advertiser_id', 'date']).head(20).reset_index(drop=True)
 
         # Convertir a diccionario para devolver
         return top_ctr_df.to_dict(orient='records')
@@ -101,12 +101,12 @@ def calcular_top_product(ti, **kwargs):
         # Convertir a DataFrame
         filtered_product_views = pd.DataFrame.from_dict(filtered_product_views_dict)
 
-        # Agrupar por advertiser_id y product_id
-        top_product_data = filtered_product_views.groupby(['advertiser_id', 'product_id']).size().reset_index(name='views')
+        # Agrupar por advertiser_id, product_id y date
+        top_product_data = filtered_product_views.groupby(['advertiser_id', 'product_id', 'date']).size().reset_index(name='views')
 
-        # Ordenar por views dentro de cada advertiser_id y tomar los top 20
-        top_products_df = top_product_data.sort_values(['advertiser_id', 'views'], ascending=[True, False])
-        top_products_df = top_products_df.groupby('advertiser_id').head(20).reset_index(drop=True)
+        # Ordenar por views dentro de cada advertiser_id y date, y tomar los top 20
+        top_products_df = top_product_data.sort_values(['advertiser_id', 'date', 'views'], ascending=[True, True, False])
+        top_products_df = top_products_df.groupby(['advertiser_id', 'date']).head(20).reset_index(drop=True)
 
         # Convertir a diccionario para devolver
         return top_products_df.to_dict(orient='records')
@@ -114,7 +114,7 @@ def calcular_top_product(ti, **kwargs):
     except Exception as e:
         print(f"Error al calcular el top de productos: {e}")
         return {}
-
+        
 def escribir_en_bd(**kwargs):
     print("Inicio de la tarea: escribir_en_bd")
     db_config = {
@@ -136,6 +136,7 @@ def escribir_en_bd(**kwargs):
                 CREATE TABLE IF NOT EXISTS top_ctr_df (
                     advertiser_id VARCHAR(50),
                     product_id VARCHAR(50),
+                    date DATE,
                     impressions INT,
                     clicks INT,
                     ctr FLOAT
@@ -145,6 +146,7 @@ def escribir_en_bd(**kwargs):
                 CREATE TABLE IF NOT EXISTS top_products_df (
                     advertiser_id VARCHAR(50),
                     product_id VARCHAR(50),
+                    date DATE,
                     views INT
                 );
             """
@@ -162,8 +164,8 @@ def escribir_en_bd(**kwargs):
             top_ctr_df = pd.DataFrame.from_dict(top_ctr_df_dict)
             for _, row in top_ctr_df.iterrows():
                 cur.execute(
-                    "INSERT INTO top_ctr_df (advertiser_id, product_id, impressions, clicks, ctr) VALUES (%s, %s, %s, %s, %s)",
-                    (row['advertiser_id'], row['product_id'], row['impressions'], row['clicks'], row['ctr'])
+                    "INSERT INTO top_ctr_df (advertiser_id, product_id, date, impressions, clicks, ctr) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (row['advertiser_id'], row['product_id'], row['date'], row['impressions'], row['clicks'], row['ctr'])
                 )
             print(f"Datos insertados en top_ctr_df: {top_ctr_df.shape[0]} filas")
 
@@ -172,8 +174,8 @@ def escribir_en_bd(**kwargs):
             top_products_df = pd.DataFrame.from_dict(top_products_df_dict)
             for _, row in top_products_df.iterrows():
                 cur.execute(
-                    "INSERT INTO top_products_df (advertiser_id, product_id, views) VALUES (%s, %s, %s)",
-                    (row['advertiser_id'], row['product_id'], row['views'])
+                    "INSERT INTO top_products_df (advertiser_id, product_id, date, views) VALUES (%s, %s, %s, %s)",
+                    (row['advertiser_id'], row['product_id'], row['date'], row['views'])
                 )
             print(f"Datos insertados en top_products_df: {top_products_df.shape[0]} filas")
 
