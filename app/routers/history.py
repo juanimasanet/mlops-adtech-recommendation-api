@@ -13,9 +13,9 @@ def get_history(adv: str):
 
     # Consulta para obtener las recomendaciones de los últimos 7 días
     query = """
-        SELECT recommendation_date, product_id, views
-        FROM top_product_df
-        WHERE advertiser_id = %s AND recommendation_date >= NOW() - INTERVAL '7 days'
+        SELECT date, product_id, views
+        FROM top_products_df
+        WHERE advertiser_id = %s AND date >= CURRENT_DATE - INTERVAL '7 days'
     """
     cursor.execute(query, (adv,))
     results = cursor.fetchall()
@@ -27,9 +27,9 @@ def get_history(adv: str):
     # Formatear resultados en una estructura JSON
     history = [
         {
-            "recommendation_date": row["recommendation_date"].strftime("%Y-%m-%d"),
-            "product_id": row["product_id"],
-            "views": row["views"]
+            "date": row[0].strftime("%Y-%m-%d"),  
+            "product_id": row[1],
+            "views": row[2]
         } for row in results
     ]
 
