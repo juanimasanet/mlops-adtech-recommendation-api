@@ -15,13 +15,13 @@ def get_stats():
     cursor = conn.cursor()
 
     # Cantidad de advertisers
-    cursor.execute("SELECT COUNT(DISTINCT advertiser_id) AS total_advertisers FROM top_product_df")
-    advertiser_count = cursor.fetchone()["total_advertisers"]
+    cursor.execute("SELECT COUNT(DISTINCT advertiser_id) AS total_advertisers FROM top_products_df")
+    advertiser_count = cursor.fetchone()[0]  # Acceso por índice porque fetchone() devuelve una tupla
 
     # Advertisers que más varían sus recomendaciones por día
     cursor.execute("""
-        SELECT advertiser_id, COUNT(DISTINCT recommendation_date) AS variation_count
-        FROM top_product_df
+        SELECT advertiser_id, COUNT(DISTINCT date) AS variation_count
+        FROM top_products_df
         GROUP BY advertiser_id
         ORDER BY variation_count DESC
         LIMIT 1
@@ -31,11 +31,13 @@ def get_stats():
     # Estadísticas de coincidencia entre ambos modelos
     cursor.execute("""
         SELECT COUNT(*) AS common_recommendations
-        FROM top_product_df tp
+        FROM top_products_df tp
         JOIN top_ctr_df tc
-        ON tp.advertiser_id = tc.advertiser_id AND tp.product_id = tc.product_id
+        ON tp.advertiser_id = tc.advertiser_id 
+           AND tp.product_id = tc.product_id
+           AND tp.date = tc.date
     """)
-    model_agreement = cursor.fetchone()["common_recommendations"]
+    model_agreement = cursor.fetchone()[0]
 
     conn.close()
 
@@ -43,8 +45,8 @@ def get_stats():
     return {
         "advertiser_count": advertiser_count,
         "top_advertiser": {
-            "advertiser_id": top_advertiser["advertiser_id"],
-            "variation_count": top_advertiser["variation_count"]
+            "advertiser_id": top_advertiser[0],  # Acceso por índice
+            "variation_count": top_advertiser[1]  # Acceso por índice
         },
         "model_agreement": model_agreement
     }
