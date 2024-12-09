@@ -157,20 +157,25 @@ def escribir_en_bd(**kwargs):
         top_ctr_df_dict = ti.xcom_pull(task_ids='calcular_top_ctr')
         top_products_df_dict = ti.xcom_pull(task_ids='calcular_top_product')
 
-        if not top_ctr_df_dict or not top_products_df_dict:
-            print("No hay datos para escribir en la base de datos.")
-            conn.close()
-            return
+        # Comprobar y escribir en top_ctr_df
+        if top_ctr_df_dict:
+            top_ctr_df = pd.DataFrame.from_dict(top_ctr_df_dict)
+            for _, row in top_ctr_df.iterrows():
+                cur.execute(
+                    "INSERT INTO top_ctr_df (advertiser_id, product_id, impressions, clicks, ctr) VALUES (%s, %s, %s, %s, %s)",
+                    (row['advertiser_id'], row['product_id'], row['impressions'], row['clicks'], row['ctr'])
+                )
+            print(f"Datos insertados en top_ctr_df: {top_ctr_df.shape[0]} filas")
 
-        top_ctr_df = pd.DataFrame.from_dict(top_ctr_df_dict)
-        top_products_df = pd.DataFrame.from_dict(top_products_df_dict)
-
-        # Insertar datos en las tablas
-        for _, row in top_ctr_df.iterrows():
-            cur.execute(
-            "INSERT INTO top_ctr_df (advertiser_id, product_id, impressions, clicks, ctr) VALUES (%s, %s, %s, %s, %s)",
-            (row['advertiser_id'], row['product_id'], row['impressions'], row['clicks'], row['ctr'])
-         )
+        # Comprobar y escribir en top_products_df
+        if top_products_df_dict:
+            top_products_df = pd.DataFrame.from_dict(top_products_df_dict)
+            for _, row in top_products_df.iterrows():
+                cur.execute(
+                    "INSERT INTO top_products_df (advertiser_id, product_id, views) VALUES (%s, %s, %s)",
+                    (row['advertiser_id'], row['product_id'], row['views'])
+                )
+            print(f"Datos insertados en top_products_df: {top_products_df.shape[0]} filas")
 
         conn.commit()
         cur.close()
@@ -179,7 +184,6 @@ def escribir_en_bd(**kwargs):
 
     except Exception as e:
         print(f"Error al conectar o escribir en la base de datos: {e}")
-
 
 # Definición del DAG
 default_args = {
