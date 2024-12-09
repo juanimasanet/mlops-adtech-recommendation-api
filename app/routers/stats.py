@@ -16,7 +16,7 @@ def get_stats():
 
     # Cantidad de advertisers
     cursor.execute("SELECT COUNT(DISTINCT advertiser_id) AS total_advertisers FROM top_products_df")
-    advertiser_count = cursor.fetchone()[0]  # Acceso por índice porque fetchone() devuelve una tupla
+    advertiser_count = cursor.fetchone()[0]  
 
     # Advertisers que más varían sus recomendaciones por día
     cursor.execute("""
