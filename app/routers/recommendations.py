@@ -16,7 +16,7 @@ def get_recommendations(adv: str, model: str):
         # Query para top_product_df
         query = """
             SELECT advertiser_id, product_id, views
-            FROM top_product_df
+            FROM top_products_df
             WHERE advertiser_id = %s
         """
         cursor.execute(query, (adv,))
