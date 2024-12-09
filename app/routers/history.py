@@ -1,36 +1,44 @@
 from fastapi import APIRouter, HTTPException
 from app.database import get_db_connection
+from psycopg2.extras import DictCursor
 
 router = APIRouter()
 
-@router.get("/history/{adv}")
-def get_history(adv: str):
+@router.get("/history/{advertiser_id}")
+def get_history(advertiser_id: str):
     """
-    Devuelve el historial de recomendaciones de los últimos 7 días para un advertiser.
+    Devuelve el historial de productos más vistos para un advertiser específico.
     """
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=DictCursor)  # Usar DictCursor para acceder a los resultados como diccionarios
 
-    # Consulta para obtener las recomendaciones de los últimos 7 días
+    # Consulta SQL
     query = """
         SELECT date, product_id, views
         FROM top_products_df
-        WHERE advertiser_id = %s AND date >= CURRENT_DATE - INTERVAL '7 days'
+        WHERE advertiser_id = %s
+        ORDER BY date DESC;
     """
-    cursor.execute(query, (adv,))
+    cursor.execute(query, (advertiser_id,))
     results = cursor.fetchall()
-    conn.close()
 
+    # Si no hay resultados, devolver un error 404
     if not results:
-        raise HTTPException(status_code=404, detail="No history found for the given advertiser.")
+        conn.close()
+        raise HTTPException(status_code=404, detail="No se encontró historial para este advertiser.")
 
-    # Formatear resultados en una estructura JSON
-    history = [
-        {
-            "date": row[0].strftime("%Y-%m-%d"),  
-            "product_id": row[1],
-            "views": row[2]
-        } for row in results
-    ]
+    # Formatear los resultados
+    history = []
+    for row in results:
+        try:
+            history.append({
+                "date": row["date"].strftime("%Y-%m-%d"),  # Asegurarse de que sea un objeto datetime
+                "product_id": row["product_id"],
+                "views": row["views"]
+            })
+        except AttributeError:
+            conn.close()
+            raise HTTPException(status_code=500, detail="Error al procesar los datos del historial.")
 
-    return {"advertiser": adv, "history": history}
+    conn.close()
+    return {"advertiser_id": advertiser_id, "history": history}
