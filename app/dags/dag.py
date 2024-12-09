@@ -77,9 +77,11 @@ def calcular_top_ctr(ti, **kwargs):
             0
         )
 
-        # Ordenar por CTR dentro de cada advertiser_id y date, y tomar los top 20
-        top_ctr_df = ctr_df.sort_values(['advertiser_id', 'date', 'ctr'], ascending=[True, True, False])
-        top_ctr_df = top_ctr_df.groupby(['advertiser_id', 'date']).head(20).reset_index(drop=True)
+        # Ordenar por CTR de manera descendente dentro de cada advertiser_id y date
+        ctr_df = ctr_df.sort_values(['advertiser_id', 'date', 'ctr'], ascending=[True, True, False])
+
+        # Tomar los top 20 por advertiser_id y date
+        top_ctr_df = ctr_df.groupby(['advertiser_id', 'date']).head(20).reset_index(drop=True)
 
         # Convertir a diccionario para devolver
         return top_ctr_df.to_dict(orient='records')
@@ -87,7 +89,7 @@ def calcular_top_ctr(ti, **kwargs):
     except Exception as e:
         print(f"Error al calcular el top CTR: {e}")
         return {}
-
+        
 def calcular_top_product(ti, **kwargs):
     try:
         # Obtener datos desde XCom
